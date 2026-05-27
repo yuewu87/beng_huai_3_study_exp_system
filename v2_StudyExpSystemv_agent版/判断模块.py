@@ -4,7 +4,10 @@ class ExeJudger:
     def __init__(self, exp_system, whitelist=None):
         # 累时长不算, 只有看学习视频时才会计时长, 待改版
         self.whitelist = whitelist or {
-            '哔哩哔哩', 'msedge'
+            'code', 'pycharm64', 'idea', 'windowsterminal', 'python',
+            'chrome', 'firefox', 'msedge',
+            'wps', 'obsidian', 'notepad', 'explorer',
+            '哔哩哔哩'
         }
         self.exp_system = exp_system
         self.agent = Agent()
