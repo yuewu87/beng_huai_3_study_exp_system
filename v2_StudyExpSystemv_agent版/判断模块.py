@@ -17,15 +17,14 @@ class ExeJudger:
             print("检测到应用名称:", app_info['app_name'])
             # 处理带.exe后缀的应用名称（如chrome.exe -> chrome）
             app_name = app_info['app_name'].lower().replace('.exe', '')
-            if app_name in self.whitelist:
-                window_title = app_info.get('window_title', '').lower()
-                print(f"应用名称: {app_name}, 窗口标题: {window_title}")
-                print("-" * 50)
-                # 传入agent判断是否有效
-                is_valid = self.agent.check_title(window_title)
-                return is_valid
-        else:
-            return False
+            if app_name not in self.whitelist:
+                return False
+            window_title = app_info.get('window_title', '').lower()
+            print(f"应用名称: {app_name}, 窗口标题: {window_title}")
+            print("-" * 50)
+            is_valid = self.agent.check_title(window_title)
+            return is_valid
+        return False
 
     def is_productive(self, app_info):
         """修改后添加经验值逻辑"""
