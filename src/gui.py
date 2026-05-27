@@ -1,15 +1,12 @@
 """PyQt5 桌面悬浮窗 — 等级/段位/经验进度实时显示 + 升级升段动画"""
 from PyQt5.QtWidgets import (QHBoxLayout, QMainWindow, QProgressBar,
                              QLabel, QVBoxLayout, QWidget)
-from PyQt5.QtCore import (Qt, QTimer, QPropertyAnimation, QEasingCurve,
-                          QParallelAnimationGroup, pyqtProperty)
-from PyQt5.QtGui import (QFont, QPainter, QColor, QLinearGradient, QBrush,
-                         QPen)
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QFont, QPainter, QColor, QLinearGradient, QBrush
 
 
 LEVEL_COLOR = "#FFD700"
 RANK_COLOR = "#AA44FF"
-GLOW_WIDTH = 6
 
 
 class ExperienceWindow(QMainWindow):
@@ -18,10 +15,7 @@ class ExperienceWindow(QMainWindow):
         self.exp_system = exp_system
         self.last_level = exp_system.user["current_level"]
         self.last_segment = self.get_segment(exp_system.user["current_level"])
-        self._glow_color = None
-        self._glow_anim = None
         self._flash_timer = None
-        self._glow_opacity_val = 0.0
 
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.drag_pos = None
@@ -30,15 +24,6 @@ class ExperienceWindow(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_data)
         self.timer.start(1000)
-
-    def _get_glow_opacity(self):
-        return self._glow_opacity_val
-
-    def _set_glow_opacity(self, val):
-        self._glow_opacity_val = val
-        self.update()
-
-    _glow_opacity = pyqtProperty(float, _get_glow_opacity, _set_glow_opacity)
 
     def mousePressEvent(self, event):
         self.drag_pos = event.globalPos()
@@ -56,22 +41,6 @@ class ExperienceWindow(QMainWindow):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # 泛光环
-        if self._glow_color and self._glow_opacity_val > 0:
-            base = QColor(self._glow_color)
-            for i in range(3):
-                alpha = int(self._glow_opacity_val * (100 - i * 30))
-                if alpha <= 0:
-                    continue
-                glow = QColor(base.red(), base.green(), base.blue(), alpha)
-                pen = QPen(glow, GLOW_WIDTH + i * 4)
-                pen.setJoinStyle(Qt.RoundJoin)
-                painter.setPen(pen)
-                painter.setBrush(Qt.NoBrush)
-                m = int((GLOW_WIDTH + i * 4) / 2)
-                painter.drawRoundedRect(self.rect().adjusted(m, m, -m, -m), 15, 15)
-
-        # 主体
         gradient = QLinearGradient(0, 0, self.width(), self.height())
         gradient.setColorAt(0, QColor(0x2b, 0x2b, 0x2b, 200))
         gradient.setColorAt(1, QColor(0x1f, 0x1f, 0x1f, 150))
@@ -158,57 +127,28 @@ class ExperienceWindow(QMainWindow):
         return 'EX'
 
     def _show_popup(self, text, color):
-        popup = QLabel(text, self)
+        popup = QLabel(text, None)
+        popup.setWindowFlags(
+            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool |
+            Qt.WA_TranslucentBackground | Qt.WA_ShowWithoutActivating
+        )
+        popup.setAttribute(Qt.WA_TranslucentBackground)
         popup.setStyleSheet(f"""
             color: {color};
             font-family: 微软雅黑;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
-            background: transparent;
-            padding: 0px;
+            background: rgba(0, 0, 0, 160);
+            border-radius: 10px;
+            padding: 12px 24px;
         """)
         popup.adjustSize()
+
+        center = self.geometry().center()
+        popup.move(center.x() - popup.width() // 2,
+                   center.y() - popup.height() - 20)
         popup.show()
-
-        x = (self.width() - popup.width()) // 2
-        y = -popup.height()
-        popup.move(x, y)
-        popup.raise_()
-
-        anim_group = QParallelAnimationGroup()
-
-        pos_anim = QPropertyAnimation(popup, b"pos")
-        pos_anim.setDuration(3000)
-        pos_anim.setStartValue(popup.pos())
-        pos_anim.setEndValue(popup.pos() + type(popup.pos())(0, -80))
-        pos_anim.setEasingCurve(QEasingCurve.OutCubic)
-
-        fade_anim = QPropertyAnimation(popup, b"windowOpacity")
-        fade_anim.setDuration(3000)
-        fade_anim.setStartValue(1.0)
-        fade_anim.setEndValue(0.0)
-
-        anim_group.addAnimation(pos_anim)
-        anim_group.addAnimation(fade_anim)
-        anim_group.finished.connect(popup.deleteLater)
-        anim_group.start()
-
-    def _start_glow(self, color):
-        self._glow_color = color
-        self._glow_opacity = 255
-        self.update()
-
-        if self._glow_anim:
-            self._glow_anim.stop()
-        self._glow_anim = QPropertyAnimation(self, b"_glow_opacity")
-        self._glow_anim.setDuration(3000)
-        self._glow_anim.setStartValue(255)
-        self._glow_anim.setEndValue(0)
-        self._glow_anim.setEasingCurve(QEasingCurve.OutQuad)
-        self._glow_anim.finished.connect(
-            lambda: setattr(self, '_glow_color', None) or self.update()
-        )
-        self._glow_anim.start()
+        QTimer.singleShot(2000, popup.close)
 
     def _flash_progress(self, color):
         self.progress.setStyleSheet(f"""
@@ -224,14 +164,13 @@ class ExperienceWindow(QMainWindow):
         self._flash_timer = QTimer()
         self._flash_timer.setSingleShot(True)
         self._flash_timer.timeout.connect(self._restore_progress_style)
-        self._flash_timer.start(3000)
+        self._flash_timer.start(2000)
 
     def _restore_progress_style(self):
         self.progress.setStyleSheet("")
 
     def _trigger_animation(self, popup_text, color):
         self._show_popup(popup_text, color)
-        self._start_glow(color)
         self._flash_progress(color)
 
     def update_data(self):

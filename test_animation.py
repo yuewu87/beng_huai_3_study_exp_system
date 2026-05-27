@@ -1,4 +1,4 @@
-"""升级/升段动画演示 — 每隔几秒依次触发"""
+"""升级/升段动画演示"""
 import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
@@ -24,7 +24,7 @@ def main():
             return
         text, color = demos[i]
         window._trigger_animation(text, color)
-        QTimer.singleShot(2500, lambda: run_demo(i + 1))
+        QTimer.singleShot(3000, lambda: run_demo(i + 1))
 
     QTimer.singleShot(500, lambda: run_demo(0))
 
