@@ -16,23 +16,11 @@ def main():
                         help="启用 LLM 判定模式")
     parser.add_argument("--no-llm", action="store_false", default=None, dest="use_llm",
                         help="使用纯白名单模式")
-    parser.add_argument("--test-anim", action="store_true",
-                        help="将经验值拉到临界值以测试动画")
     args = parser.parse_args()
 
     app = QApplication(sys.argv)
 
     exp_sys = ExpSystem()
-    if args.test_anim:
-        thresholds = exp_sys.exp_thresholds
-        cur = exp_sys.user["total_xp"]
-        for t in thresholds:
-            if cur < t:
-                exp_sys.user["total_xp"] = t - 1
-                exp_sys._update_level()
-                print(f"[TEST] 经验值已拉到 {t - 1}，下次检测触发升级/升段动画")
-                break
-
     judger = ExeJudger(exp_sys, use_llm=args.use_llm)
     exp_sys.set_productivity_check(judger.last_was_productive)
     monitor = ExeChecker()

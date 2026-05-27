@@ -1,12 +1,8 @@
-"""PyQt5 桌面悬浮窗 — 等级/段位/经验进度实时显示 + 升级升段动画"""
+"""PyQt5 桌面悬浮窗 — 等级/段位/经验进度实时显示"""
 from PyQt5.QtWidgets import (QHBoxLayout, QMainWindow, QProgressBar,
                              QLabel, QVBoxLayout, QWidget)
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QPainter, QColor, QLinearGradient, QBrush
-
-
-LEVEL_COLOR = "#FFD700"
-RANK_COLOR = "#AA44FF"
 
 
 class ExperienceWindow(QMainWindow):
@@ -15,7 +11,6 @@ class ExperienceWindow(QMainWindow):
         self.exp_system = exp_system
         self.last_level = exp_system.user["current_level"]
         self.last_segment = self.get_segment(exp_system.user["current_level"])
-        self._flash_timer = None
 
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.drag_pos = None
@@ -126,53 +121,6 @@ class ExperienceWindow(QMainWindow):
             return segments[(level-1)//10]
         return 'EX'
 
-    def _show_popup(self, text, color):
-        popup = QLabel(text, None)
-        popup.setWindowFlags(
-            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool |
-            Qt.WA_TranslucentBackground | Qt.WA_ShowWithoutActivating
-        )
-        popup.setAttribute(Qt.WA_TranslucentBackground)
-        popup.setStyleSheet(f"""
-            color: {color};
-            font-family: 微软雅黑;
-            font-size: 24px;
-            font-weight: bold;
-            background: rgba(0, 0, 0, 160);
-            border-radius: 10px;
-            padding: 12px 24px;
-        """)
-        popup.adjustSize()
-
-        center = self.geometry().center()
-        popup.move(center.x() - popup.width() // 2,
-                   center.y() - popup.height() - 20)
-        popup.show()
-        QTimer.singleShot(2000, popup.close)
-
-    def _flash_progress(self, color):
-        self.progress.setStyleSheet(f"""
-            QProgressBar::chunk {{
-                background: qlineargradient(x1:0, y1:0, x1:1, y1:0,
-                    stop:0 {color},
-                    stop:1 {color});
-                border-radius: 3px;
-            }}
-        """)
-        if self._flash_timer:
-            self._flash_timer.stop()
-        self._flash_timer = QTimer()
-        self._flash_timer.setSingleShot(True)
-        self._flash_timer.timeout.connect(self._restore_progress_style)
-        self._flash_timer.start(2000)
-
-    def _restore_progress_style(self):
-        self.progress.setStyleSheet("")
-
-    def _trigger_animation(self, popup_text, color):
-        self._show_popup(popup_text, color)
-        self._flash_progress(color)
-
     def update_data(self):
         self.exp_system._update_level()
         current_level = self.exp_system.user["current_level"]
@@ -194,12 +142,10 @@ class ExperienceWindow(QMainWindow):
             self.progress.setFormat("经验进度: MAX")
 
         self.level_label.setText(f"等级: {current_level} 级")
-        self.segment_label.setText(f"段位: {current_segment} 级女武神")
+        self.segment_label.setText(f"段位: {self.get_segment(current_level)} 级女武神")
 
         if current_level > self.last_level:
-            self._trigger_animation(f"LEVEL UP! (Lv.{current_level})", LEVEL_COLOR)
             self.last_level = current_level
 
         if current_segment != self.last_segment:
-            self._trigger_animation(f"RANK UP! ({current_segment})", RANK_COLOR)
             self.last_segment = current_segment
