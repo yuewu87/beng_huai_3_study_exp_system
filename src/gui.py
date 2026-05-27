@@ -2,7 +2,7 @@
 from PyQt5.QtWidgets import (QHBoxLayout, QMainWindow, QProgressBar,
                              QLabel, QVBoxLayout, QWidget)
 from PyQt5.QtCore import (Qt, QTimer, QPropertyAnimation, QEasingCurve,
-                          QParallelAnimationGroup)
+                          QParallelAnimationGroup, pyqtProperty)
 from PyQt5.QtGui import (QFont, QPainter, QColor, QLinearGradient, QBrush,
                          QPen)
 
@@ -38,7 +38,7 @@ class ExperienceWindow(QMainWindow):
         self._glow_opacity_val = val
         self.update()
 
-    _glow_opacity = property(_get_glow_opacity, _set_glow_opacity)
+    _glow_opacity = pyqtProperty(float, _get_glow_opacity, _set_glow_opacity)
 
     def mousePressEvent(self, event):
         self.drag_pos = event.globalPos()
