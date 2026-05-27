@@ -15,38 +15,46 @@ class ExeJudger:
         }
         self.exp_system = exp_system
         self.agent = Agent()
+        self._prev_app = None
+        self._prev_title = None
 
     def _check_productive(self, app_info):
         if not app_info.get('app_name'):
             return False
 
-        print("检测到应用名称:", app_info['app_name'])
         app_name = app_info['app_name'].lower().replace('.exe', '')
+        window_title = app_info.get('window_title', '').lower()
+        app_changed = app_name != self._prev_app
+        title_changed = window_title != self._prev_title
 
         # 1. 内置白名单或已学习白名单 → 直接放行
         if app_name in self.direct_pass or app_name in self.agent.learned_direct:
-            print(f"应用名称: {app_name} → 直接放行")
-            print("-" * 50)
+            if app_changed:
+                print(f"应用: {app_name} → 直接放行")
+                print("-" * 50)
+            self._prev_app = app_name
             return True
 
         # 2. 内置灰名单或已学习灰名单 → LLM 判定标题
         if app_name in self.llm_check or app_name in self.agent.learned_llm:
-            window_title = app_info.get('window_title', '').lower()
-            print(f"应用名称: {app_name}, 窗口标题: {window_title}")
-            print("-" * 50)
+            if app_changed or title_changed:
+                print(f"应用: {app_name}, 标题: {window_title} → 检测")
+                print("-" * 50)
+            self._prev_app = app_name
+            self._prev_title = window_title
             return self.agent.check_title(window_title)
 
         # 3. 未知应用 → LLM 先分类应用类型
         label = self.agent.classify_app(app_name)
-        print(f"应用分类结果: {app_name} → {label}")
-        print("-" * 50)
+        if app_changed:
+            print(f"应用分类: {app_name} → {label}")
+            print("-" * 50)
 
+        self._prev_app = app_name
         if label == "direct":
             return True
         if label == "llm":
-            window_title = app_info.get('window_title', '').lower()
             return self.agent.check_title(window_title)
-
         return False
 
     def is_productive(self, app_info):
