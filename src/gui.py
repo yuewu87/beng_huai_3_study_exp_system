@@ -21,7 +21,7 @@ class ExperienceWindow(QMainWindow):
         self._glow_color = None
         self._glow_anim = None
         self._flash_timer = None
-        self.__glow_opacity = 0.0
+        self._glow_opacity_val = 0.0
 
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.drag_pos = None
@@ -31,12 +31,14 @@ class ExperienceWindow(QMainWindow):
         self.timer.timeout.connect(self.update_data)
         self.timer.start(1000)
 
+    def _get_glow_opacity(self):
+        return self._glow_opacity_val
+
     def _set_glow_opacity(self, val):
-        self.__glow_opacity = val
+        self._glow_opacity_val = val
         self.update()
 
-    _glow_opacity = property(lambda self: getattr(self, '__glow_opacity', 0.0),
-                             _set_glow_opacity)
+    _glow_opacity = property(_get_glow_opacity, _set_glow_opacity)
 
     def mousePressEvent(self, event):
         self.drag_pos = event.globalPos()
@@ -55,10 +57,10 @@ class ExperienceWindow(QMainWindow):
         painter.setRenderHint(QPainter.Antialiasing)
 
         # 泛光环
-        if self._glow_color and self.__glow_opacity > 0:
+        if self._glow_color and self._glow_opacity_val > 0:
             base = QColor(self._glow_color)
             for i in range(3):
-                alpha = int(self.__glow_opacity * (100 - i * 30))
+                alpha = int(self._glow_opacity_val * (100 - i * 30))
                 if alpha <= 0:
                     continue
                 glow = QColor(base.red(), base.green(), base.blue(), alpha)
