@@ -110,12 +110,16 @@ class ExpSystem:
         self.user["current_level"] = min(new_level, 88)
 
     def _init_keyboard_listener(self):
+        self._is_productive = lambda: False
         from pynput import keyboard
         def on_press(key):
-            if (time.time() - self.last_key_time) > 0.05:
+            if (time.time() - self.last_key_time) > 0.05 and self._is_productive():
                 self.add_xp(self.config["base_xp"]["key_press"])
                 self.last_key_time = time.time()
 
         listener = keyboard.Listener(on_press=on_press)
         listener.daemon = True
         listener.start()
+
+    def set_productivity_check(self, checker):
+        self._is_productive = checker

@@ -22,6 +22,7 @@ def main():
 
     exp_sys = ExpSystem()
     judger = ExeJudger(exp_sys, use_llm=args.use_llm)
+    exp_sys.set_productivity_check(judger.last_was_productive)
     monitor = ExeChecker()
 
     window = ExperienceWindow(exp_sys)
@@ -48,7 +49,7 @@ def main():
 
     xp_timer = QTimer()
     xp_timer.timeout.connect(tick_xp)
-    xp_timer.start(3000)
+    xp_timer.start(1000)
 
     sys.exit(app.exec_())
 

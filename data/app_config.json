@@ -5,22 +5,26 @@
     "explorer",
     "idea",
     "notepad",
+    "obs64",
     "obsidian",
     "pycharm64",
     "python",
-    "windowsterminal"
+    "windowsterminal", 
+    "wps"
   ],
   "llm_check": [
     "chrome",
     "firefox",
     "msedge",
-    "searchhost",
-    "unknown",
-    "wps",
     "哔哩哔哩"
   ],
   "blacklist": [
     "cloudmusic",
-    "qq"
+    "osu!",
+    "qq", 
+    "clash-verge",
+    "searchhost",
+    "startmenuexperiencehost",
+    "unknown"
   ]
 }

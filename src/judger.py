@@ -8,6 +8,7 @@ class ExeJudger:
         self.agent = Agent(use_llm=use_llm)
         self._prev_app = None
         self._prev_title = None
+        self._last_valid = False
 
     def _check_title(self, app_name, window_title, app_changed, title_changed):
         if not self.agent.use_llm:
@@ -72,9 +73,12 @@ class ExeJudger:
         return False
 
     def is_productive(self, app_info):
-        is_valid = self._check_productive(app_info)
-        if is_valid:
+        self._last_valid = self._check_productive(app_info)
+        if self._last_valid:
             self.exp_system.add_xp(
                 self.exp_system.config["base_xp"]["app_active"]
             )
-        return is_valid
+        return self._last_valid
+
+    def last_was_productive(self):
+        return self._last_valid
