@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 from src.exp_system import ExpSystem
-from src.gui import ExperienceWindow
+from src.gui import ExperienceWindow, LEVEL_COLOR, RANK_COLOR
 
 
 def main():
@@ -14,20 +14,17 @@ def main():
     window.show()
 
     demos = [
-        (window._show_popup, ("LEVEL UP! (Lv.30)", "#FFD700")),
-        (window._flash_progress, ("#FFD700",)),
-        (window._show_popup, ("RANK UP! (B)", "#AA44FF")),
-        (window._flash_progress, ("#AA44FF",)),
-        (window._show_popup, ("LEVEL UP! (Lv.31)", "#FFD700")),
-        (window._flash_progress, ("#FFD700",)),
+        ("LEVEL UP! (Lv.30)", LEVEL_COLOR),
+        ("RANK UP! (B)", RANK_COLOR),
+        ("LEVEL UP! (Lv.31)", LEVEL_COLOR),
     ]
 
     def run_demo(i=0):
         if i >= len(demos):
             return
-        func, args = demos[i]
-        func(*args)
-        QTimer.singleShot(2000, lambda: run_demo(i + 1))
+        text, color = demos[i]
+        window._trigger_animation(text, color)
+        QTimer.singleShot(2500, lambda: run_demo(i + 1))
 
     QTimer.singleShot(500, lambda: run_demo(0))
 
