@@ -119,7 +119,7 @@ class ExperienceWindow(QMainWindow):
         main_widget.setLayout(main_layout)
 
         self.setWindowTitle("学习经验系统")
-        self.setGeometry(100, 100, 300, 100)
+        self.setGeometry(100, 100, 380, 100)
 
     def get_segment(self, level):
         segments = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS']
