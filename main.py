@@ -3,6 +3,7 @@ import argparse
 import sys
 import signal
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QTimer
 from src.monitor import ExeChecker
 from src.judger import ExeJudger
 from src.exp_system import ExpSystem
@@ -35,10 +36,20 @@ def main():
         app.quit()
     signal.signal(signal.SIGINT, graceful_exit)
 
-    def check_app(app_info):
+    # 窗口变化时触发判定 + 日志输出
+    def on_window_change(app_info):
         judger.is_productive(app_info)
 
-    monitor.start_monitoring(on_change=check_app)
+    monitor.start_monitoring(on_change=on_window_change)
+
+    # 每 3 秒检测当前窗口，持续积累经验
+    def tick_xp():
+        judger.is_productive(monitor.get_current_info())
+
+    xp_timer = QTimer()
+    xp_timer.timeout.connect(tick_xp)
+    xp_timer.start(3000)
+
     sys.exit(app.exec_())
 
 
