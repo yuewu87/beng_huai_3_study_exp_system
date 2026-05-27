@@ -35,7 +35,12 @@ class ExeJudger:
             self._prev_title = window_title
             return result
 
-        # 3. 未知应用 → LLM 先分类应用类型
+        # 3. 黑名单 → 直接跳过
+        if app_name in self.agent.blacklist:
+            self._prev_app = app_name
+            return False
+
+        # 4. 未知应用 → LLM 先分类应用类型
         label = self.agent.classify_app(app_name)
         self._prev_app = app_name
         if app_changed:
@@ -44,7 +49,7 @@ class ExeJudger:
             elif label == "llm":
                 print(f"应用分类: {app_name} → 内容应用，已加入灰名单")
             else:
-                print(f"应用分类: {app_name} → 非学习应用")
+                print(f"应用分类: {app_name} → 非学习应用，已加入黑名单")
             print("-" * 50)
 
         if label == "direct":

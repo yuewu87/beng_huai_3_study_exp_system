@@ -5,6 +5,7 @@ from openai import OpenAI
 
 DEFAULT_DIRECT = {'code', 'pycharm64', 'idea', 'windowsterminal', 'python', 'obsidian', 'notepad', 'explorer'}
 DEFAULT_LLM = {'chrome', 'firefox', 'msedge', 'wps', '哔哩哔哩'}
+DEFAULT_BLACKLIST = set()
 
 
 class Agent:
@@ -35,6 +36,7 @@ class Agent:
 
         self.direct_pass = set()
         self.llm_check = set()
+        self.blacklist = set()
         self._load_app_config()
 
     def _load_api_key(self):
@@ -61,6 +63,7 @@ class Agent:
                     data = json.load(f)
                     self.direct_pass = set(data.get("direct_pass", []))
                     self.llm_check = set(data.get("llm_check", []))
+                    self.blacklist = set(data.get("blacklist", []))
                     return
             except Exception:
                 pass
@@ -73,6 +76,7 @@ class Agent:
                     data = json.load(f)
                     self.direct_pass = DEFAULT_DIRECT | set(data.get("direct", []))
                     self.llm_check = DEFAULT_LLM | set(data.get("llm", []))
+                    self.blacklist = DEFAULT_BLACKLIST.copy()
                     self._save_app_config()
                     old_path.unlink()
                     return
@@ -82,6 +86,7 @@ class Agent:
         # 首次运行，写默认配置
         self.direct_pass = DEFAULT_DIRECT.copy()
         self.llm_check = DEFAULT_LLM.copy()
+        self.blacklist = DEFAULT_BLACKLIST.copy()
         self._save_app_config()
 
     def _save_app_config(self):
@@ -89,7 +94,8 @@ class Agent:
         with open(path, "w") as f:
             json.dump({
                 "direct_pass": sorted(self.direct_pass),
-                "llm_check": sorted(self.llm_check)
+                "llm_check": sorted(self.llm_check),
+                "blacklist": sorted(self.blacklist)
             }, f, indent=2, ensure_ascii=False)
 
     def check_title(self, title: str) -> bool:
@@ -129,6 +135,8 @@ class Agent:
             return "direct"
         if name in self.llm_check:
             return "llm"
+        if name in self.blacklist:
+            return "none"
 
         try:
             response = self.client.chat.completions.create(
@@ -146,10 +154,10 @@ class Agent:
             elif label == "llm":
                 self.llm_check.add(name)
             else:
+                self.blacklist.add(name)
                 label = "none"
 
-            if label != "none":
-                self._save_app_config()
+            self._save_app_config()
             return label
         except Exception as e:
             print(f"MiMo API 应用分类失败: {e}")
