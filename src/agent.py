@@ -1,3 +1,4 @@
+"""MiMo LLM Agent — 窗口标题判定 + 应用分类 + 名单自动学习"""
 import json
 from pathlib import Path
 from openai import OpenAI

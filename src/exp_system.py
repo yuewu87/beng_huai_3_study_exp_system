@@ -1,3 +1,4 @@
+"""经验值系统 — 等级/段位计算 + 夜间倍率 + 键盘监听"""
 import json
 import time
 from datetime import datetime

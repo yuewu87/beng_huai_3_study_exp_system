@@ -1,3 +1,4 @@
+"""PyQt5 桌面悬浮窗 — 等级/段位/经验进度实时显示"""
 from PyQt5.QtWidgets import (QHBoxLayout, QMainWindow, QProgressBar,
                              QLabel, QVBoxLayout, QWidget)
 from PyQt5.QtCore import Qt, QTimer

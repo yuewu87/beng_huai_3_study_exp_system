@@ -1,3 +1,4 @@
+"""前台窗口监测 — 检测活动窗口变化并回调通知"""
 import win32gui
 import win32process
 import psutil

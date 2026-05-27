@@ -1,3 +1,4 @@
+"""崩坏3 学习经验系统 — 入口，支持 --llm / --no-llm 参数"""
 import argparse
 import sys
 import signal

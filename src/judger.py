@@ -1,3 +1,4 @@
+"""判定引擎 — 黑/白/灰三级判定链，支持 LLM 与白名单双模式"""
 from .agent import Agent
 
 
