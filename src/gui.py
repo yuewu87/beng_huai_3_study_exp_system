@@ -178,13 +178,13 @@ class ExperienceWindow(QMainWindow):
         anim_group = QParallelAnimationGroup()
 
         pos_anim = QPropertyAnimation(popup, b"pos")
-        pos_anim.setDuration(1200)
+        pos_anim.setDuration(3000)
         pos_anim.setStartValue(popup.pos())
-        pos_anim.setEndValue(popup.pos() + type(popup.pos())(0, -60))
+        pos_anim.setEndValue(popup.pos() + type(popup.pos())(0, -80))
         pos_anim.setEasingCurve(QEasingCurve.OutCubic)
 
         fade_anim = QPropertyAnimation(popup, b"windowOpacity")
-        fade_anim.setDuration(1200)
+        fade_anim.setDuration(3000)
         fade_anim.setStartValue(1.0)
         fade_anim.setEndValue(0.0)
 
@@ -201,7 +201,7 @@ class ExperienceWindow(QMainWindow):
         if self._glow_anim:
             self._glow_anim.stop()
         self._glow_anim = QPropertyAnimation(self, b"_glow_opacity")
-        self._glow_anim.setDuration(360)
+        self._glow_anim.setDuration(3000)
         self._glow_anim.setStartValue(255)
         self._glow_anim.setEndValue(0)
         self._glow_anim.setEasingCurve(QEasingCurve.OutQuad)
@@ -224,7 +224,7 @@ class ExperienceWindow(QMainWindow):
         self._flash_timer = QTimer()
         self._flash_timer.setSingleShot(True)
         self._flash_timer.timeout.connect(self._restore_progress_style)
-        self._flash_timer.start(1200)
+        self._flash_timer.start(3000)
 
     def _restore_progress_style(self):
         self.progress.setStyleSheet("")
