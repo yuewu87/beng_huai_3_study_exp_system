@@ -37,20 +37,26 @@ class ExeJudger:
 
         # 2. 内置灰名单或已学习灰名单 → LLM 判定标题
         if app_name in self.llm_check or app_name in self.agent.learned_llm:
+            result = self.agent.check_title(window_title)
             if app_changed or title_changed:
-                print(f"应用: {app_name}, 标题: {window_title} → 检测")
+                print(f"应用: {app_name}, 标题: {window_title} → {'有效' if result else '无效'}")
                 print("-" * 50)
             self._prev_app = app_name
             self._prev_title = window_title
-            return self.agent.check_title(window_title)
+            return result
 
         # 3. 未知应用 → LLM 先分类应用类型
         label = self.agent.classify_app(app_name)
+        self._prev_app = app_name
         if app_changed:
-            print(f"应用分类: {app_name} → {label}")
+            if label == "direct":
+                print(f"应用分类: {app_name} → 开发工具，已加入白名单")
+            elif label == "llm":
+                print(f"应用分类: {app_name} → 内容应用，已加入灰名单")
+            else:
+                print(f"应用分类: {app_name} → 非学习应用")
             print("-" * 50)
 
-        self._prev_app = app_name
         if label == "direct":
             return True
         if label == "llm":
