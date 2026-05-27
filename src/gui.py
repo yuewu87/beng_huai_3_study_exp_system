@@ -2,12 +2,14 @@
 from PyQt5.QtWidgets import (QHBoxLayout, QMainWindow, QProgressBar,
                              QLabel, QVBoxLayout, QWidget)
 from PyQt5.QtCore import (Qt, QTimer, QPropertyAnimation, QEasingCurve,
-                          QParallelAnimationGroup, QSequentialAnimationGroup)
-from PyQt5.QtGui import QFont, QPainter, QColor, QLinearGradient, QBrush
+                          QParallelAnimationGroup)
+from PyQt5.QtGui import (QFont, QPainter, QColor, QLinearGradient, QBrush,
+                         QPen)
 
 
 LEVEL_COLOR = "#FFD700"
 RANK_COLOR = "#AA44FF"
+GLOW_WIDTH = 6
 
 
 class ExperienceWindow(QMainWindow):
@@ -16,7 +18,10 @@ class ExperienceWindow(QMainWindow):
         self.exp_system = exp_system
         self.last_level = exp_system.user["current_level"]
         self.last_segment = self.get_segment(exp_system.user["current_level"])
+        self._glow_color = None
+        self._glow_anim = None
         self._flash_timer = None
+        self.__glow_opacity = 0.0
 
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.drag_pos = None
@@ -25,6 +30,13 @@ class ExperienceWindow(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_data)
         self.timer.start(1000)
+
+    def _set_glow_opacity(self, val):
+        self.__glow_opacity = val
+        self.update()
+
+    _glow_opacity = property(lambda self: getattr(self, '__glow_opacity', 0.0),
+                             _set_glow_opacity)
 
     def mousePressEvent(self, event):
         self.drag_pos = event.globalPos()
@@ -42,6 +54,22 @@ class ExperienceWindow(QMainWindow):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
+        # 泛光环
+        if self._glow_color and self.__glow_opacity > 0:
+            base = QColor(self._glow_color)
+            for i in range(3):
+                alpha = int(self.__glow_opacity * (100 - i * 30))
+                if alpha <= 0:
+                    continue
+                glow = QColor(base.red(), base.green(), base.blue(), alpha)
+                pen = QPen(glow, GLOW_WIDTH + i * 4)
+                pen.setJoinStyle(Qt.RoundJoin)
+                painter.setPen(pen)
+                painter.setBrush(Qt.NoBrush)
+                m = int((GLOW_WIDTH + i * 4) / 2)
+                painter.drawRoundedRect(self.rect().adjusted(m, m, -m, -m), 15, 15)
+
+        # 主体
         gradient = QLinearGradient(0, 0, self.width(), self.height())
         gradient.setColorAt(0, QColor(0x2b, 0x2b, 0x2b, 200))
         gradient.setColorAt(1, QColor(0x1f, 0x1f, 0x1f, 150))
@@ -163,6 +191,23 @@ class ExperienceWindow(QMainWindow):
         anim_group.finished.connect(popup.deleteLater)
         anim_group.start()
 
+    def _start_glow(self, color):
+        self._glow_color = color
+        self._glow_opacity = 255
+        self.update()
+
+        if self._glow_anim:
+            self._glow_anim.stop()
+        self._glow_anim = QPropertyAnimation(self, b"_glow_opacity")
+        self._glow_anim.setDuration(360)
+        self._glow_anim.setStartValue(255)
+        self._glow_anim.setEndValue(0)
+        self._glow_anim.setEasingCurve(QEasingCurve.OutQuad)
+        self._glow_anim.finished.connect(
+            lambda: setattr(self, '_glow_color', None) or self.update()
+        )
+        self._glow_anim.start()
+
     def _flash_progress(self, color):
         self.progress.setStyleSheet(f"""
             QProgressBar::chunk {{
@@ -181,6 +226,11 @@ class ExperienceWindow(QMainWindow):
 
     def _restore_progress_style(self):
         self.progress.setStyleSheet("")
+
+    def _trigger_animation(self, popup_text, color):
+        self._show_popup(popup_text, color)
+        self._start_glow(color)
+        self._flash_progress(color)
 
     def update_data(self):
         self.exp_system._update_level()
@@ -206,12 +256,9 @@ class ExperienceWindow(QMainWindow):
         self.segment_label.setText(f"段位: {current_segment} 级女武神")
 
         if current_level > self.last_level:
-            self._show_popup(f"LEVEL UP! (Lv.{current_level})", LEVEL_COLOR)
-            self._flash_progress(LEVEL_COLOR)
+            self._trigger_animation(f"LEVEL UP! (Lv.{current_level})", LEVEL_COLOR)
             self.last_level = current_level
 
         if current_segment != self.last_segment:
-            segments = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS']
-            self._show_popup(f"RANK UP! ({current_segment})", RANK_COLOR)
-            self._flash_progress(RANK_COLOR)
+            self._trigger_animation(f"RANK UP! ({current_segment})", RANK_COLOR)
             self.last_segment = current_segment
