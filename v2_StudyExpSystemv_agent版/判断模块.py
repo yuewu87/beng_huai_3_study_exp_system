@@ -6,12 +6,12 @@ class ExeJudger:
         # 直接放行：开发/笔记工具，无需 LLM 判定
         self.direct_pass = whitelist or {
             'code', 'pycharm64', 'idea', 'windowsterminal', 'python',
-            'obsidian', 'notepad'
+            'obsidian', 'notepad', 'explorer'
         }
         # 需 LLM 判定标题：浏览器/办公/文件管理器
         self.llm_check = {
             'chrome', 'firefox', 'msedge',
-            'wps', 'explorer', '哔哩哔哩'
+            'wps', '哔哩哔哩'
         }
         self.exp_system = exp_system
         self.agent = Agent()
@@ -60,7 +60,12 @@ class ExeJudger:
         if label == "direct":
             return True
         if label == "llm":
-            return self.agent.check_title(window_title)
+            result = self.agent.check_title(window_title)
+            if app_changed:
+                print(f"标题判定: {window_title} → {'有效' if result else '无效'}")
+                print("-" * 50)
+            self._prev_title = window_title
+            return result
         return False
 
     def is_productive(self, app_info):
