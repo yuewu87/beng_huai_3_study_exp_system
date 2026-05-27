@@ -3,6 +3,10 @@ from pathlib import Path
 from openai import OpenAI
 
 
+DEFAULT_DIRECT = {'code', 'pycharm64', 'idea', 'windowsterminal', 'python', 'obsidian', 'notepad', 'explorer'}
+DEFAULT_LLM = {'chrome', 'firefox', 'msedge', 'wps', '哔哩哔哩'}
+
+
 class Agent:
     def __init__(self):
         api_key = self._load_api_key()
@@ -29,9 +33,9 @@ class Agent:
             '只回答 direct、llm 或 none，不要附带任何解释。'
         )
 
-        self.learned_direct = set()
-        self.learned_llm = set()
-        self._load_learned_apps()
+        self.direct_pass = set()
+        self.llm_check = set()
+        self._load_app_config()
 
     def _load_api_key(self):
         config_path = Path("./data/api_config.json")
@@ -49,23 +53,43 @@ class Agent:
             )
         return api_key
 
-    def _load_learned_apps(self):
-        path = Path("./data/learned_apps.json")
+    def _load_app_config(self):
+        path = Path("./data/app_config.json")
         if path.exists():
             try:
                 with open(path) as f:
                     data = json.load(f)
-                    self.learned_direct = set(data.get("direct", []))
-                    self.learned_llm = set(data.get("llm", []))
+                    self.direct_pass = set(data.get("direct_pass", []))
+                    self.llm_check = set(data.get("llm_check", []))
+                    return
             except Exception:
                 pass
 
-    def _save_learned_apps(self):
-        path = Path("./data/learned_apps.json")
+        # 迁移旧 learned_apps.json
+        old_path = Path("./data/learned_apps.json")
+        if old_path.exists():
+            try:
+                with open(old_path) as f:
+                    data = json.load(f)
+                    self.direct_pass = DEFAULT_DIRECT | set(data.get("direct", []))
+                    self.llm_check = DEFAULT_LLM | set(data.get("llm", []))
+                    self._save_app_config()
+                    old_path.unlink()
+                    return
+            except Exception:
+                pass
+
+        # 首次运行，写默认配置
+        self.direct_pass = DEFAULT_DIRECT.copy()
+        self.llm_check = DEFAULT_LLM.copy()
+        self._save_app_config()
+
+    def _save_app_config(self):
+        path = Path("./data/app_config.json")
         with open(path, "w") as f:
             json.dump({
-                "direct": sorted(self.learned_direct),
-                "llm": sorted(self.learned_llm)
+                "direct_pass": sorted(self.direct_pass),
+                "llm_check": sorted(self.llm_check)
             }, f, indent=2, ensure_ascii=False)
 
     def check_title(self, title: str) -> bool:
@@ -98,12 +122,12 @@ class Agent:
             return False
 
     def classify_app(self, app_name: str) -> str:
-        """返回 'direct'、'llm' 或 'none'"""
+        """返回 'direct'、'llm' 或 'none'，并自动写入配置"""
         name = app_name.strip().lower()
 
-        if name in self.learned_direct:
+        if name in self.direct_pass:
             return "direct"
-        if name in self.learned_llm:
+        if name in self.llm_check:
             return "llm"
 
         try:
@@ -118,13 +142,14 @@ class Agent:
             label = response.choices[0].message.content.strip().lower()
 
             if label == "direct":
-                self.learned_direct.add(name)
+                self.direct_pass.add(name)
             elif label == "llm":
-                self.learned_llm.add(name)
+                self.llm_check.add(name)
             else:
                 label = "none"
 
-            self._save_learned_apps()
+            if label != "none":
+                self._save_app_config()
             return label
         except Exception as e:
             print(f"MiMo API 应用分类失败: {e}")

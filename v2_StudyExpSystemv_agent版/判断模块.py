@@ -2,17 +2,7 @@ from agent import Agent
 
 
 class ExeJudger:
-    def __init__(self, exp_system, whitelist=None):
-        # 直接放行：开发/笔记工具，无需 LLM 判定
-        self.direct_pass = whitelist or {
-            'code', 'pycharm64', 'idea', 'windowsterminal', 'python',
-            'obsidian', 'notepad', 'explorer'
-        }
-        # 需 LLM 判定标题：浏览器/办公/文件管理器
-        self.llm_check = {
-            'chrome', 'firefox', 'msedge',
-            'wps', '哔哩哔哩'
-        }
+    def __init__(self, exp_system):
         self.exp_system = exp_system
         self.agent = Agent()
         self._prev_app = None
@@ -27,16 +17,16 @@ class ExeJudger:
         app_changed = app_name != self._prev_app
         title_changed = window_title != self._prev_title
 
-        # 1. 内置白名单或已学习白名单 → 直接放行
-        if app_name in self.direct_pass or app_name in self.agent.learned_direct:
+        # 1. 白名单 → 直接放行
+        if app_name in self.agent.direct_pass:
             if app_changed:
                 print(f"应用: {app_name} → 直接放行")
                 print("-" * 50)
             self._prev_app = app_name
             return True
 
-        # 2. 内置灰名单或已学习灰名单 → LLM 判定标题
-        if app_name in self.llm_check or app_name in self.agent.learned_llm:
+        # 2. 灰名单 → LLM 判定标题
+        if app_name in self.agent.llm_check:
             result = self.agent.check_title(window_title)
             if app_changed or title_changed:
                 print(f"应用: {app_name}, 标题: {window_title} → {'有效' if result else '无效'}")
