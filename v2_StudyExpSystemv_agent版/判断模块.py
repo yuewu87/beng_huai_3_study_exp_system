@@ -59,7 +59,6 @@ class ExeJudger:
 
     def is_productive(self, app_info):
         is_valid = self._check_productive(app_info)
-        print("是否有效: ", is_valid)
         if is_valid:
             self.exp_system.add_xp(
                 self.exp_system.config["base_xp"]["app_active"]

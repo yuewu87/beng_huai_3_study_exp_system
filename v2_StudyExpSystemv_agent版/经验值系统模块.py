@@ -94,8 +94,6 @@ class ExpSystem:
         multiplier = self._get_multiplier()     # 获取当前时段的经验倍率(如夜间加成)
         actual_xp = amount * multiplier         # 计算实际获得经验值 = 基础值 × 倍率
 
-        # 添加调试信息
-        print(f"[XP+] 获得经验值 {amount} × {multiplier}倍 = {actual_xp} (总经验: {self.user['total_xp']} → {self.user['total_xp'] + actual_xp})")
 
         self.user["total_xp"] += actual_xp      # 更新总经验值
         self.user["last_update"] = time.time()  # 更新最后更新时间
