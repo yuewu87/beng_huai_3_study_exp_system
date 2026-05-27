@@ -17,7 +17,12 @@ class ExeJudger:
         app_changed = app_name != self._prev_app
         title_changed = window_title != self._prev_title
 
-        # 1. 白名单 → 直接放行
+        # 1. 黑名单 → 直接跳过
+        if app_name in self.agent.blacklist:
+            self._prev_app = app_name
+            return False
+
+        # 2. 白名单 → 直接放行
         if app_name in self.agent.direct_pass:
             if app_changed:
                 print(f"应用: {app_name} → 直接放行")
@@ -25,7 +30,7 @@ class ExeJudger:
             self._prev_app = app_name
             return True
 
-        # 2. 灰名单 → LLM 判定标题
+        # 3. 灰名单 → LLM 判定标题
         if app_name in self.agent.llm_check:
             result = self.agent.check_title(window_title)
             if app_changed or title_changed:
@@ -34,11 +39,6 @@ class ExeJudger:
             self._prev_app = app_name
             self._prev_title = window_title
             return result
-
-        # 3. 黑名单 → 直接跳过
-        if app_name in self.agent.blacklist:
-            self._prev_app = app_name
-            return False
 
         # 4. 未知应用 → LLM 先分类应用类型
         label = self.agent.classify_app(app_name)

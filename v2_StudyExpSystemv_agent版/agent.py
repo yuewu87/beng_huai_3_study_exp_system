@@ -64,6 +64,7 @@ class Agent:
                     self.direct_pass = set(data.get("direct_pass", []))
                     self.llm_check = set(data.get("llm_check", []))
                     self.blacklist = set(data.get("blacklist", []))
+                    self._deduplicate_lists()
                     return
             except Exception:
                 pass
@@ -98,6 +99,16 @@ class Agent:
                 "blacklist": sorted(self.blacklist)
             }, f, indent=2, ensure_ascii=False)
 
+    def _deduplicate_lists(self):
+        """黑名单优先级最高，从其他名单中移除，写回文件"""
+        before = (self.direct_pass.copy(), self.llm_check.copy(), self.blacklist.copy())
+        self.direct_pass -= self.blacklist
+        self.llm_check -= self.blacklist
+        self.llm_check -= self.direct_pass
+        after = (self.direct_pass, self.llm_check, self.blacklist)
+        if before != after:
+            self._save_app_config()
+
     def check_title(self, title: str) -> bool:
         normalized_title = title.strip().lower()
 
@@ -131,12 +142,12 @@ class Agent:
         """返回 'direct'、'llm' 或 'none'，并自动写入配置"""
         name = app_name.strip().lower()
 
+        if name in self.blacklist:
+            return "none"
         if name in self.direct_pass:
             return "direct"
         if name in self.llm_check:
             return "llm"
-        if name in self.blacklist:
-            return "none"
 
         try:
             response = self.client.chat.completions.create(
