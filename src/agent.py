@@ -9,7 +9,8 @@ DEFAULT_BLACKLIST = set()
 
 
 class Agent:
-    def __init__(self):
+    def __init__(self, use_llm=None):
+        self._use_llm_override = use_llm
         self.use_llm = True
         self.client = None
         self.true_titles = set()
@@ -35,6 +36,9 @@ class Agent:
         self.llm_check = set()
         self.blacklist = set()
         self._load_app_config()
+
+        if self._use_llm_override is not None:
+            self.use_llm = self._use_llm_override
 
         if self.use_llm:
             self._init_client()

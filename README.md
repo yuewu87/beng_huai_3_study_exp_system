@@ -6,55 +6,69 @@
 
 ```
 Exp_system/
-├── main.py              # 入口
-├── monitor.py           # 前台窗口监测，变化时回调
-├── judger.py            # 判定引擎（LLM + 白名单双重模式）
-├── agent.py             # MiMo LLM Agent
-├── exp_system.py        # 经验值 / 等级 / 段位系统
-├── gui.py               # PyQt5 悬浮窗
+├── main.py
+├── start_llm.bat          # LLM 模式一键启动
+├── start_simple.bat       # 白名单模式一键启动
+├── src/
+│   ├── agent.py           # MiMo LLM Agent
+│   ├── judger.py          # 判定引擎
+│   ├── exp_system.py      # 经验值系统
+│   ├── gui.py             # PyQt5 悬浮窗
+│   └── monitor.py         # 前台窗口监测
 ├── requirements.txt
 └── data/
-    ├── api_config.json      # MiMo API Key（不入库）
+    ├── api_config.json
     ├── api_config.example.json
-    ├── app_config.json      # 黑白灰名单 + LLM 开关
-    ├── exp_config.json      # 经验值参数
-    └── user_data.json       # 用户存档
+    ├── app_config.json
+    ├── exp_config.json
+    └── user_data.json
 ```
 
 ## 运行模式
 
-### LLM 模式（默认）
-
-`data/app_config.json` 中 `"use_llm": true`
+### LLM 模式 `--llm`
 
 ```
 app_name
-  ├── 黑名单        → False（零 API）
-  ├── 白名单        → True（零 API）
-  ├── 灰名单        → LLM 判定窗口标题
-  └── 未知应用       → LLM 分类后自动加入对应名单
+  ├── 黑名单 → False（零 API）
+  ├── 白名单 → True（零 API）
+  ├── 灰名单 → LLM 判定窗口标题
+  └── 未知    → LLM 分类后自动加入对应名单
 ```
 
-### 白名单模式
+### 白名单模式 `--no-llm`
 
-`data/app_config.json` 中 `"use_llm": false`
-
-- 白名单 + 灰名单合并视为白名单，直接放行
-- 黑名单直接跳过
-- 不调用任何 LLM API
-- LLM 初始化失败时自动降级到此模式
+- 白名单 + 灰名单合并视为白名单
+- 零 API 调用
+- 不加 `--llm` / `--no-llm` 时默认读取 `app_config.json` 的 `use_llm` 字段
 
 ## 快速开始
 
 ```bash
 pip install -r requirements.txt
-
-# 配置 API Key（白名单模式可跳过）
-cp data/api_config.example.json data/api_config.json
-# 编辑 data/api_config.json
-
-python main.py
 ```
+
+### LLM 模式
+
+双击 `start_llm.bat`，或：
+```bash
+python main.py --llm
+```
+
+需先配置 API Key：
+```bash
+cp data/api_config.example.json data/api_config.json
+# 编辑填入 MiMo API Key
+```
+
+### 白名单模式
+
+双击 `start_simple.bat`，或：
+```bash
+python main.py --no-llm
+```
+
+无需 API Key，纯白名单判定。
 
 ## 等级系统
 

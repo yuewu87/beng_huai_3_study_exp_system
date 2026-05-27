@@ -1,10 +1,10 @@
-from agent import Agent
+from .agent import Agent
 
 
 class ExeJudger:
-    def __init__(self, exp_system):
+    def __init__(self, exp_system, use_llm=None):
         self.exp_system = exp_system
-        self.agent = Agent()
+        self.agent = Agent(use_llm=use_llm)
         self._prev_app = None
         self._prev_title = None
 
