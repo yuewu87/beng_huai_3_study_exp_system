@@ -10,11 +10,8 @@ DEFAULT_BLACKLIST = set()
 
 class Agent:
     def __init__(self):
-        api_key = self._load_api_key()
-        self.client = OpenAI(
-            base_url="https://api.xiaomimimo.com/v1",
-            api_key=api_key
-        )
+        self.use_llm = True
+        self.client = None
         self.true_titles = set()
         self.false_titles = set()
 
@@ -29,8 +26,8 @@ class Agent:
             '应用名称: "{app_name}"\n\n'
             '分类规则：\n'
             '- 回答 "direct"：IDE、编辑器、终端、版本管理、调试器、设计工具、数据库工具等直接用于编程开发的工具\n'
-            '- 回答 "llm"：浏览器、办公软件、视频平台、文档阅读器、文件管理器等需要看具体内容才能判断的工具\n'
-            '- 回答 "none"：游戏、娱乐、购物等与学习无关的应用\n\n'
+            '- 回答 "llm"：浏览器、办公软件、视频平台等需要看具体内容才能判断的工具\n'
+            '- 回答 "none"：游戏、娱乐、购物、社交软件等与学习无关的应用\n\n'
             '只回答 direct、llm 或 none，不要附带任何解释。'
         )
 
@@ -38,6 +35,20 @@ class Agent:
         self.llm_check = set()
         self.blacklist = set()
         self._load_app_config()
+
+        if self.use_llm:
+            self._init_client()
+
+    def _init_client(self):
+        try:
+            api_key = self._load_api_key()
+            self.client = OpenAI(
+                base_url="https://api.xiaomimimo.com/v1",
+                api_key=api_key
+            )
+        except Exception as e:
+            print(f"LLM 初始化失败，降级为白名单模式: {e}")
+            self.use_llm = False
 
     def _load_api_key(self):
         config_path = Path("./data/api_config.json")
@@ -61,6 +72,7 @@ class Agent:
             try:
                 with open(path) as f:
                     data = json.load(f)
+                    self.use_llm = data.get("use_llm", True)
                     self.direct_pass = set(data.get("direct_pass", []))
                     self.llm_check = set(data.get("llm_check", []))
                     self.blacklist = set(data.get("blacklist", []))
@@ -84,7 +96,7 @@ class Agent:
             except Exception:
                 pass
 
-        # 首次运行，写默认配置
+        # 首次运行
         self.direct_pass = DEFAULT_DIRECT.copy()
         self.llm_check = DEFAULT_LLM.copy()
         self.blacklist = DEFAULT_BLACKLIST.copy()
@@ -94,13 +106,13 @@ class Agent:
         path = Path("./data/app_config.json")
         with open(path, "w") as f:
             json.dump({
+                "use_llm": self.use_llm,
                 "direct_pass": sorted(self.direct_pass),
                 "llm_check": sorted(self.llm_check),
                 "blacklist": sorted(self.blacklist)
             }, f, indent=2, ensure_ascii=False)
 
     def _deduplicate_lists(self):
-        """黑名单优先级最高，从其他名单中移除，写回文件"""
         before = (self.direct_pass.copy(), self.llm_check.copy(), self.blacklist.copy())
         self.direct_pass -= self.blacklist
         self.llm_check -= self.blacklist
@@ -110,6 +122,9 @@ class Agent:
             self._save_app_config()
 
     def check_title(self, title: str) -> bool:
+        if not self.use_llm or self.client is None:
+            return True
+
         normalized_title = title.strip().lower()
 
         if normalized_title in self.true_titles:
@@ -139,7 +154,9 @@ class Agent:
             return False
 
     def classify_app(self, app_name: str) -> str:
-        """返回 'direct'、'llm' 或 'none'，并自动写入配置"""
+        if not self.use_llm or self.client is None:
+            return "none"
+
         name = app_name.strip().lower()
 
         if name in self.blacklist:
@@ -173,8 +190,3 @@ class Agent:
         except Exception as e:
             print(f"MiMo API 应用分类失败: {e}")
             return "none"
-
-
-if __name__ == "__main__":
-    agent = Agent()
-    print(agent.check_title("VS Code - main.py"))

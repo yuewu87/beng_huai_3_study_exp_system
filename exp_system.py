@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+
 class ExpSystem:
     def __init__(self):
         self.config_file = Path("./data/exp_config.json")
@@ -10,26 +11,24 @@ class ExpSystem:
         self._load_config()
         self._load_user_data()
         self._precompute_thresholds()
-        
-        # 初始化键盘监听
+
         self._init_keyboard_listener()
-        self.last_key_time = 0  # 防连击保护
+        self.last_key_time = 0
 
     def _load_config(self):
-        """加载经验配置"""
         default_config = {
             "base_xp": {
-                "app_active": 10,    # 有效应用检测奖励
-                "key_press": 1       # 每次按键奖励
+                "app_active": 10,
+                "key_press": 1
             },
-            "night_multiplier": {    # 夜间奖励时段
-                "start": 22,         # 开始时间（22点）
-                "end": 6,            # 结束时间（次日6点） 
-                "rate": 1.5          # 经验倍率
+            "night_multiplier": {
+                "start": 22,
+                "end": 6,
+                "rate": 1.5
             },
-            "level_formula": "200*(n**1.7) + 50*n"  # 等级计算公式
+            "level_formula": "200*(n**1.7) + 50*n"
         }
-        
+
         self.config_file.parent.mkdir(parents=True, exist_ok=True)
 
         if not self.config_file.exists():
@@ -41,48 +40,41 @@ class ExpSystem:
                 self.config = json.load(f)
 
     def _load_user_data(self):
-        """加载用户数据"""
         default_user = {
-            "total_xp": 0,               # 总经验值
-            "current_level": 1,          # 当前等级
-            "last_update": time.time()   # 最后更新时间
+            "total_xp": 0,
+            "current_level": 1,
+            "last_update": time.time()
         }
-        
+
         self.user_file.parent.mkdir(parents=True, exist_ok=True)
 
         try:
             with open(self.user_file) as f:
                 self.user = json.load(f)
-                # 数据校验
                 self.user["total_xp"] = max(self.user.get("total_xp", 0), 0)
         except:
             self.user = default_user
             self._save_user_data()
 
     def _save_user_data(self):
-        """保存用户数据"""
         with open(self.user_file, 'w') as f:
             json.dump(self.user, f, indent=2)
 
     def _precompute_thresholds(self):
-        """预计算各等级经验阈值"""
         self.exp_thresholds = []
         total = 0
-        # 常规等级 1-80
         for lv in range(1, 81):
             lv_exp = int(200*(lv**1.7) + 50*lv)
             total += lv_exp
             self.exp_thresholds.append(total)
-        
-        # EX等级 81-88
-        ex_base = self.exp_thresholds[-1]  # 80级总经验
+
+        ex_base = self.exp_thresholds[-1]
         for lv in range(81, 89):
             ex_exp = ex_base * (2**(lv-80))
             total += ex_exp
             self.exp_thresholds.append(total)
 
     def _get_multiplier(self):
-        """获取当前时段倍率"""
         now = datetime.now().hour
         cfg = self.config["night_multiplier"]
         if cfg["start"] <= now or now < cfg["end"]:
@@ -90,46 +82,39 @@ class ExpSystem:
         return 1.0
 
     def add_xp(self, amount):
-        """添加经验值核心方法"""
-        multiplier = self._get_multiplier()     # 获取当前时段的经验倍率(如夜间加成)
-        actual_xp = amount * multiplier         # 计算实际获得经验值 = 基础值 × 倍率
+        multiplier = self._get_multiplier()
+        actual_xp = amount * multiplier
 
-
-        self.user["total_xp"] += actual_xp      # 更新总经验值
-        self.user["last_update"] = time.time()  # 更新最后更新时间
-        self._update_level()                    # 检查并更新等级
-        self._save_user_data()                  # 保存数据
+        self.user["total_xp"] += actual_xp
+        self.user["last_update"] = time.time()
+        self._update_level()
+        self._save_user_data()
 
     def _update_level(self):
-        """更新等级逻辑"""
-        # 初始化时预计算阈值
         if not hasattr(self, 'exp_thresholds'):
             self._precompute_thresholds()
-        
+
         current_xp = self.user["total_xp"]
         new_level = 1
-        
-        # 二分查找优化性能
+
         left, right = 0, len(self.exp_thresholds)-1
         while left <= right:
             mid = (left + right) // 2
             if current_xp >= self.exp_thresholds[mid]:
-                new_level = mid + 2  # 等级=索引+1（因数组从0开始）
+                new_level = mid + 2
                 left = mid + 1
             else:
-                right = mid -1
-        
-        # 限制最大等级为88
+                right = mid - 1
+
         self.user["current_level"] = min(new_level, 88)
 
     def _init_keyboard_listener(self):
-        """初始化键盘监听线程"""
         from pynput import keyboard
         def on_press(key):
             if (time.time() - self.last_key_time) > 0.05:
                 self.add_xp(self.config["base_xp"]["key_press"])
                 self.last_key_time = time.time()
-        
+
         listener = keyboard.Listener(on_press=on_press)
         listener.daemon = True
         listener.start()

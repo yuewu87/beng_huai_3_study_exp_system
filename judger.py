@@ -9,6 +9,8 @@ class ExeJudger:
         self._prev_title = None
 
     def _check_title(self, app_name, window_title, app_changed, title_changed):
+        if not self.agent.use_llm:
+            return True
         result = self.agent.check_title(window_title)
         if app_changed or title_changed:
             print(f"应用: {app_name}, 标题: {window_title} → {'有效' if result else '无效'}")
@@ -39,11 +41,21 @@ class ExeJudger:
             self._prev_app = app_name
             return True
 
-        # 3. 灰名单 → LLM 判定标题
+        # 3. 灰名单 → LLM 判定（LLM 不可用时视为白名单）
         if app_name in self.agent.llm_check:
+            if not self.agent.use_llm:
+                if app_changed:
+                    print(f"应用: {app_name} → 白名单放行")
+                    print("-" * 50)
+                self._prev_app = app_name
+                return True
             return self._check_title(app_name, window_title, app_changed, title_changed)
 
-        # 4. 未知应用 → LLM 先分类应用类型
+        # 4. 未知应用
+        if not self.agent.use_llm:
+            self._prev_app = app_name
+            return False
+
         label = self.agent.classify_app(app_name)
         if app_changed:
             mapping = {"direct": "开发工具，已加入白名单", "llm": "内容应用，已加入灰名单"}

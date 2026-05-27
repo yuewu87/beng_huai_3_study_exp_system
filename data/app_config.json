@@ -1,0 +1,24 @@
+{
+  "use_llm": true,
+  "direct_pass": [
+    "code",
+    "explorer",
+    "idea",
+    "notepad",
+    "obsidian",
+    "pycharm64",
+    "python",
+    "windowsterminal"
+  ],
+  "llm_check": [
+    "chrome",
+    "firefox",
+    "msedge",
+    "wps",
+    "哔哩哔哩"
+  ],
+  "blacklist": [
+    "cloudmusic",
+    "qq"
+  ]
+}
