@@ -1,0 +1,13 @@
+{
+  "base_xp": {
+    "app_active": 10,
+    "key_press": 1, 
+    "file_save": 20
+  },
+  "night_multiplier": {
+    "start": 22,
+    "end": 6,
+    "rate": 1.5
+  },
+  "level_formula": "200*(n**1.7) + 50*n"
+}

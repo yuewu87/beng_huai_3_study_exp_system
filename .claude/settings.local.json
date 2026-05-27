@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:platform.xiaomimimo.com)",
+      "WebSearch",
+      "Bash(curl -sL --max-time 15 \"https://platform.xiaomimimo.com/docs/zh-CN/quick-start/first-api-call\")",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git remote *)",
+      "Bash(git push *)"
+    ]
+  }
+}
